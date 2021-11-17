@@ -1,11 +1,16 @@
+import 'dart:async';
 import 'dart:html';
 
 import 'package:chatisdisabled/chat/chat.dart';
+import 'package:chatisdisabled/tv/tv_grid.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:cloud_firestore_web/cloud_firestore_web.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase/firebase.dart' as fb;
+import 'package:responsive_framework/responsive_wrapper.dart';
+import 'package:youtube_parser/youtube_parser.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,7 +27,6 @@ void main() async {
   } else {
     fb.app();
   }
-
   runApp(MyApp());
 }
 
@@ -31,7 +35,8 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      home: MyHomePage(title: 'ChatIsDisabled - A Chat For When You Can\'t'),
+      title: 'ChatIsDisabled',
       theme: ThemeData(
         // This is the theme of your application.
         //
@@ -42,10 +47,18 @@ class MyApp extends StatelessWidget {
         // or simply save your changes to "hot reload" in a Flutter IDE).
         // Notice that the counter didn't reset back to zero; the application
         // is not restarted.
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.cyan,
+        textTheme: TextTheme(
+          headline1: TextStyle(color: Colors.white),
+          headline2: TextStyle(color: Colors.white),
+          headline3: TextStyle(color: Colors.white),
+          headline4: TextStyle(color: Colors.white),
+          headline5: TextStyle(color: Colors.white),
+          headline6: TextStyle(color: Colors.white),
+          button: TextStyle(color: Colors.white)
+        )
       ),
-      home: MyHomePage(title: 'ChatisDisabled'),
-    );
+      );
   }
 }
 
@@ -69,6 +82,7 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   String link = '';
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
   @override
   // TODO: implement widget
  void initState() {
@@ -82,104 +96,155 @@ class _MyHomePageState extends State<MyHomePage> {
     // The Flutter framework has been optimized to make rerunning build methods
     // fast, so that you can just rebuild anything that needs updating rather
     // than having to individually change instances of widgets.
-    final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            Form(
-              key: _formKey,
-              child: Padding(
-                padding: EdgeInsets.symmetric(vertical: 0, horizontal: 300),
+    return  ResponsiveWrapper.builder(
+        Scaffold(
+          appBar: AppBar(
+            // Here we take the value from the MyHomePage object that was created by
+            // the App.build method, and use it to set our appbar title.
+            title: Row(
+              children: [
+                Text(widget.title, style: TextStyle(color: Colors.white),),
+
+              ],
+            ),
+
+          ),
+          body: Column(
+            // Column is also a layout widget. It takes a list of children and
+            // arranges them vertically. By default, it sizes itself to fit its
+            // children horizontally, and tries to be as tall as its parent.
+            //
+            // Invoke "debug painting" (press "p" in the console, choose the
+            // "Toggle Debug Paint" action from the Flutter Inspector in Android
+            // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
+            // to see the wireframe for each widget.
+            //
+            // Column has various properties to control how it sizes itself and
+            // how it positions its children. Here we use mainAxisAlignment to
+            // center the children vertically; the main axis here is the vertical
+            // axis because Columns are vertical (the cross axis would be
+            // horizontal).
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: <Widget>[
+              Form(
+                key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: <Widget>[
-                    TextFormField(
-                      validator: (input){
-                        // print("validators");
-                        if (input == null || input.isEmpty) {
-                          return 'Please enter a link';
-                        }
-                        bool youtube = RegExp(r"http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?").hasMatch(input.toString());
-                        bool twitch = RegExp(r"^(?:https?:\/\/)?(?:www\.|go\.)?twitch\.tv\/([a-z0-9_]+)($|\?)").hasMatch(input.toString());
-                        if(!(youtube||twitch)){
-                          return "not a valid link";
-                        }
-                        return null;
-                      },
-                      onChanged: (value) {
-                        link = value;
-                      },
-                      decoration: const InputDecoration(
-                        hintText: 'Enter Twitch/Youtube Live Stream Link',
+                    Padding(
+                      padding: const EdgeInsets.all(8.0),
+                      child: TextFormField(
+                        autofocus: true,
+                        onFieldSubmitted: (value) async {
+                          // print("starting");
+                          submit();
+
+                        },
+                        validator: (input) {
+                          link = input!;
+                          // print("validators");
+                          if (input.isEmpty) {
+                            return 'Please enter a link';
+                          }
+                          bool youtube = RegExp(r"http(?:s?):\/\/(?:www\.)?youtu(?:be\.com\/watch\?v=|\.be\/)([\w\-\_]*)(&(amp;)?‌​[\w\?‌​=]*)?").hasMatch(input.toString());
+                          bool twitch = RegExp(r"^(?:https?:\/\/)?(?:www\.|go\.)?twitch\.tv\/([a-z0-9_]+)($|\?)").hasMatch(input.toString());
+                          if(!(youtube||twitch)){
+                            return "not a valid link";
+                          }
+                          else if (youtube){
+                            link = getIdFromUrl(link)!;
+                            if(link == null){
+                              return "Youtube link not valid";
+                            }
+                          }
+                          return null;
+                        },
+                        decoration: const InputDecoration(
+                          hintText: 'Enter Twitch/Youtube Live Stream Link',
+                        ),
                       ),
                     ),
                     ElevatedButton(
                       onPressed: () async {
                         // print("starting");
-                          if (_formKey.currentState!.validate()) {
-                            print("valid");
-                            CollectionReference col = FirebaseFirestore.instance.collection('rooms');
-                            print('collected');
-                            col.where("host_link", isEqualTo: link).get().then((doc) async {
-                              print("listed");
-                              if(doc.docs.isEmpty){
-                              print("empty");
-                              await FirebaseFirestore.instance.collection('rooms').add(
-                                  {
-                                    "host_link": link,
-                                  }
-
-                              ).then((value) => value.collection("messsages").add({
-                                "msg" : "Hi! Welcome to the chatisdisabled for " + link + "! Please feel free to use this site as a replacement for live chat. Share the URL to share the chat.",
-                                "time" : Timestamp.fromDate(DateTime(2021,  11,  10))
-
-                              }));
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => Chat(id: doc.docs.first.id )),);
-                              print("pressed and loaded");
-                            }
-                            else{
-                              print("not empty");
-                              Navigator.push(context, MaterialPageRoute(builder: (context) => Chat(id: doc.docs.first.id )),);
-                            }
-                            });
-
-                          }
+                        submit();
 
                       },
-                      child: const Text('Submit'),
+                      child: const Text('Chat!', style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
               ),
-            ),
-          ],
+              // Text("OR",style: TextStyle(fontSize: 25)),
+              // Text("Choose A Show", style: TextStyle(fontSize: 20),),
+              // Container(height: 100,
+              // child: TvGrid(),),
+
+            ],
+          ),
+          // This trailing comma makes auto-formatting nicer for build methods.
         ),
-      ),
-      // This trailing comma makes auto-formatting nicer for build methods.
+      defaultScale: true,
+      minWidth: 480,
+      breakpoints: [
+        ResponsiveBreakpoint.autoScale(480, name: MOBILE),
+        ResponsiveBreakpoint.autoScale(800, name: TABLET),
+        ResponsiveBreakpoint.autoScale(1000, name: DESKTOP),
+        ResponsiveBreakpoint.autoScale(2460, name: '4K'),
+      ],
     );
 
+  }
+  void submit(){
+    if (_formKey.currentState!.validate()) {
+      print("valid");
+      CollectionReference col = FirebaseFirestore.instance.collection('rooms');
+      print('collected');
+      col.where("host_link", isEqualTo: link).get().then((doc) async {
+        print("listed");
+        if(doc.docs.isEmpty) {
+          makeroom();
+        }
+        else {
+          print("not empty");
+          Navigator.push(context, MaterialPageRoute(
+              builder: (context) =>
+                  Chat(id: doc.docs.first.id)),);
+        }
+      });
+
+    }
+  }
+
+  void makeroom()async{
+      print("empty");
+      if (link != null || link.isNotEmpty) {
+        await FirebaseFirestore.instance.collection(
+            'rooms').add(
+            {
+              "host_link": link,
+              "time": Timestamp.now()x
+            }
+
+        ).then((value) async {
+          await value.collection("messages").add({
+            "msg": "Hi! Welcome to ChatIsDisabled!\nPlease feel free to use this site as a replacement for live chat.\nShare the URL to share the chat.",
+            "time": Timestamp.fromDate(
+                DateTime(2021, 11, 10)),
+            "auth": "ChatIsDisabled"
+          }).then((valuemsg) {
+            //TODO: Get Docs again if empty
+
+              Navigator.push(context, MaterialPageRoute(
+                  builder: (context) =>
+                      Chat(id: value.id)),);
+              print("pressed and loaded");
+
+
+          });
+        }
+        );
+
+    }
   }
 }
