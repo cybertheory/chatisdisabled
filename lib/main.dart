@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:html';
 
+import 'package:buy_me_a_coffee_widget/buy_me_a_coffee_widget.dart';
 import 'package:chatisdisabled/chat/chat.dart';
 import 'package:chatisdisabled/tv/tv_grid.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -24,9 +25,17 @@ void main() async {
         appId: "1:1020855228259:web:97fda66248272b6bbae556",
         measurementId: "G-7VWJS08RJZ");
 
+
   } else {
     fb.app();
   }
+
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  _auth.signInAnonymously();
+  window.onBeforeUnload.listen((event) async{
+    // do something
+    FirebaseAuth.instance.currentUser!.delete();
+  });
   runApp(MyApp());
 }
 
@@ -104,7 +113,6 @@ class _MyHomePageState extends State<MyHomePage> {
             title: Row(
               children: [
                 Text(widget.title, style: TextStyle(color: Colors.white),),
-
               ],
             ),
 
@@ -209,7 +217,7 @@ class _MyHomePageState extends State<MyHomePage> {
           print("not empty");
           Navigator.push(context, MaterialPageRoute(
               builder: (context) =>
-                  Chat(id: doc.docs.first.id)),);
+                  Chat(id: doc.docs.first.id, link: link,)),);
         }
       });
 
@@ -223,7 +231,7 @@ class _MyHomePageState extends State<MyHomePage> {
             'rooms').add(
             {
               "host_link": link,
-              "time": Timestamp.now()x
+              "time": Timestamp.now()
             }
 
         ).then((value) async {
@@ -237,7 +245,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
               Navigator.push(context, MaterialPageRoute(
                   builder: (context) =>
-                      Chat(id: value.id)),);
+                      Chat(id: value.id, link: link)),);
               print("pressed and loaded");
 
 

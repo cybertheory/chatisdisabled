@@ -18,18 +18,20 @@ class ChatTile extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-         Text(msg.auth,
-            softWrap: true, style: TextStyle(color: colors[msg.auth.codeUnitAt(0)%colors.length]),),
-         SizedBox(height: 10,),
+         msg.type == "social" ? Text(msg.auth,
+            softWrap: true, style: TextStyle(color: colors[msg.auth.codeUnitAt(0)%colors.length]),) : Container(),
+    msg.type != "confetti" ? SizedBox(height: 10,): Container(),
          isGiphy ? gif :
-         SelectableLinkify( onOpen: (link) async {
+         SelectableLinkify(
+           style: TextStyle(color: msg.type != "social" ? Colors.grey : Colors.black),
+           onOpen: (link) async {
            if (await canLaunch(link.url)) {
              await launch(link.url);
            } else {
              throw 'Could not launch $link';
            }
-         }, text: msg.msg,
-         options: LinkifyOptions(looseUrl: true),),
+         }, text: msg.type != "confetti" ? msg.msg : msg.auth + " celebrated with CONFETTI",
+         options: LinkifyOptions(looseUrl: true),) ,
         ],
       ),
     );
